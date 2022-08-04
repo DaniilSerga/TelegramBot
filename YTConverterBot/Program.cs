@@ -32,17 +32,21 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
     {
         var message = update.Message;
 
+
         if (message is null || message.Text is null)
         {
-            throw new Exception("Message was null");
+            return;
         }
 
         if (message.Text.ToLower() == "/start")
         {
-            await botClient.SendTextMessageAsync(message.Chat, "Добро пожаловать на борт, добрый путник!");
-            return;
+            await botClient.SendTextMessageAsync(message.Chat, "Начнём. Ожидаю ссылку на youtube видео:");
         }
-        await botClient.SendTextMessageAsync(message.Chat, "Привет-привет!!");
+
+        if (message.Text.StartsWith("https://www.youtube.com/"))
+        {
+            await botClient.SendAudioAsync()
+        }
     }
 }
 
