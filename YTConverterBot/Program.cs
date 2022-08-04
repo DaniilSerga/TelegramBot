@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Exceptions;
 using System.IO;
 
@@ -43,7 +44,7 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
         {
             return;
         }
-
+        
         if (message.Text.ToLower() == "/start")
         {
             await botClient.SendTextMessageAsync(message.Chat, "Начнём. Ожидаю ссылку на youtube видео:");
@@ -57,8 +58,10 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
 
             await using (var stream = System.IO.File.OpenRead(songPath))
             {
-                var r = botClient.SendAudioAsync(update.Message.Chat.Id, new Telegram.Bot.Types.InputFiles.InputOnlineFile(stream)).Result;
+               _ = botClient.SendAudioAsync(update.Message.Chat.Id, new Telegram.Bot.Types.InputFiles.InputOnlineFile(stream)).Result;
             }
+
+            ConversionsService.DeleteMusicFromLocalRep();
         }
     }
 }

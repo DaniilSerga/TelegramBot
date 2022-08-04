@@ -15,11 +15,6 @@ namespace Bot.BusinessLogic.Services.Implementations
         public ApplicationContext _context;
 
         public ConversionsService() { }
-
-        public ConversionsService(ApplicationContext context)
-        {
-            _context = context;
-        }
         
         // TODO Compete deleting files from local repository after sending the message in telegram
         public string Convert(string url)
@@ -49,6 +44,16 @@ namespace Bot.BusinessLogic.Services.Implementations
             }
 
             return $"{source + vid.FullName}.mp3";
+        }
+
+        public static void DeleteMusicFromLocalRep()
+        {
+            DirectoryInfo dirInfo = new DirectoryInfo(_pathToFolder);
+
+            foreach (FileInfo file in dirInfo.GetFiles())
+            {
+                file.Delete();
+            }
         }
     }
 }
