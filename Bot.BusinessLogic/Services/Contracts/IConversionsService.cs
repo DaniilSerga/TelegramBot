@@ -4,6 +4,6 @@ namespace Bot.BusinessLogic.Services.Contracts
 {
     internal interface IConversionsService
     {
-        void CreateNote(ConversionModel conversion);
+        string Convert(string url);
     }
 }

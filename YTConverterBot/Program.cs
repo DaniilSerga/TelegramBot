@@ -1,10 +1,12 @@
-﻿using System;
+﻿using Bot.BusinessLogic.Services.Implementations;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Exceptions;
+using System.IO;
 
 ITelegramBotClient bot = new TelegramBotClient("5499122271:AAGRTlxr4IV_3WJI82Kci97MpIQ3GjM2los");
 
@@ -32,6 +34,10 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
     {
         var message = update.Message;
 
+        if (update is null)
+        {
+            return;
+        }
 
         if (message is null || message.Text is null)
         {
@@ -45,7 +51,14 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
 
         if (message.Text.StartsWith("https://www.youtube.com/"))
         {
-            await botClient.SendAudioAsync()
+            botClient.SendTextMessageAsync(update.Message.Chat.Id, "Песня загружается...");
+
+            string songPath = new ConversionsService().Convert(message.Text);
+
+            await using (var stream = System.IO.File.OpenRead(songPath))
+            {
+                var r = botClient.SendAudioAsync(update.Message.Chat.Id, new Telegram.Bot.Types.InputFiles.InputOnlineFile(stream)).Result;
+            }
         }
     }
 }
