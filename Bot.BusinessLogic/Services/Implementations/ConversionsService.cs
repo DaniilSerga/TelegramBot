@@ -11,7 +11,7 @@ namespace Bot.BusinessLogic.Services.Implementations
 {
     public class ConversionsService : IConversionsService
     {
-        private static readonly string _pathToFolder = Environment.CurrentDirectory + @"\ConvertedMp3";
+        private static readonly string _pathToFolder = Environment.CurrentDirectory + @"\ConvertedMp3\";
         public ApplicationContext _context;
 
         public ConversionsService() { }
@@ -20,7 +20,8 @@ namespace Bot.BusinessLogic.Services.Implementations
         {
             _context = context;
         }
-
+        
+        // TODO Compete deleting files from local repository after sending the message in telegram
         public string Convert(string url)
         {
             DirectoryInfo dirInfo = new DirectoryInfo(_pathToFolder);
