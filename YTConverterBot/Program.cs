@@ -57,7 +57,9 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
             string songPath = new ConversionsService().Convert(message.Text, update.Message.Chat.Id, update.Message.Chat.FirstName + " " + update.Message.Chat.LastName);
 
             await using var stream = System.IO.File.OpenRead(songPath);
-            _ = botClient.SendAudioAsync(update.Message.Chat.Id, new Telegram.Bot.Types.InputFiles.InputOnlineFile(stream), cancellationToken: cancellationToken);
+            _ = botClient.SendAudioAsync(update.Message.Chat.Id,
+                new Telegram.Bot.Types.InputFiles.InputOnlineFile(stream, songPath.Substring(songPath.LastIndexOf('\\'), songPath.Length - songPath.LastIndexOf('\\'))),
+                cancellationToken: cancellationToken);
         }
     }
 }
