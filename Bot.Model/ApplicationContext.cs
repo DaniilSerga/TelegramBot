@@ -7,9 +7,14 @@ namespace Bot.Model
     {
         public DbSet<Conversion> Conversions { get; set; } = null!;
 
-        public ApplicationContext(DbContextOptions<ApplicationContext> options)
-            : base(options)
+        public ApplicationContext()
         {
+            Database.EnsureCreated();
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlServer(@"Server=localhost;Database=ConversionsDb;Trusted_Connection=True;");
         }
     }
 }

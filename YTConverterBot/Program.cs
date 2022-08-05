@@ -44,7 +44,7 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
         {
             return;
         }
-        
+
         if (message.Text.ToLower() == "/start")
         {
             await botClient.SendTextMessageAsync(message.Chat, "Начнём. Ожидаю ссылку на youtube видео:");
@@ -54,14 +54,10 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
         {
             botClient.SendTextMessageAsync(update.Message.Chat.Id, "Песня загружается...");
 
-            string songPath = new ConversionsService().Convert(message.Text);
+            string songPath = new ConversionsService().Convert(message.Text, update.Message.Chat.Id, update.Message.Chat.FirstName + " " + update.Message.Chat.LastName);
 
-            await using (var stream = System.IO.File.OpenRead(songPath))
-            {
-               _ = botClient.SendAudioAsync(update.Message.Chat.Id, new Telegram.Bot.Types.InputFiles.InputOnlineFile(stream)).Result;
-            }
-
-            ConversionsService.DeleteMusicFromLocalRep();
+            await using var stream = System.IO.File.OpenRead(songPath);
+            _ = botClient.SendAudioAsync(update.Message.Chat.Id, new Telegram.Bot.Types.InputFiles.InputOnlineFile(stream), cancellationToken: cancellationToken);
         }
     }
 }

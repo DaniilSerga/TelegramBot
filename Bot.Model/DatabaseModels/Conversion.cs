@@ -10,7 +10,7 @@ namespace Bot.Model.DatabaseModels
         [Key]
         public int Id { get; set; }
 
-        public int UserId { get; set; }
+        public long UserId { get; set; }
 
         public string YtLink { get; set; } = string.Empty;
 
