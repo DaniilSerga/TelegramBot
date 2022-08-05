@@ -49,10 +49,9 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
         {
             await botClient.SendTextMessageAsync(message.Chat, "Начнём. Ожидаю ссылку на youtube видео:");
         }
-
-        if (message.Text.StartsWith("https://www.youtube.com/"))
+        else if (message.Text.StartsWith("https://www.youtube.com/") || message.Text.StartsWith("https://youtu.be/"))
         {
-            botClient.SendTextMessageAsync(update.Message.Chat.Id, "Песня загружается...");
+            botClient.SendTextMessageAsync(update.Message.Chat.Id, "Песня загружается\nЭто может занять некоторое время...");
 
             string songPath = new ConversionsService().Convert(message.Text, update.Message.Chat.Id, update.Message.Chat.FirstName + " " + update.Message.Chat.LastName);
 
@@ -60,6 +59,12 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
             _ = botClient.SendAudioAsync(update.Message.Chat.Id,
                 new Telegram.Bot.Types.InputFiles.InputOnlineFile(stream, songPath.Substring(songPath.LastIndexOf('\\'), songPath.Length - songPath.LastIndexOf('\\'))),
                 cancellationToken: cancellationToken);
+
+            Console.WriteLine("-------------------------------\nSENDED SUCCESFULLY\n-------------------------------");
+        }
+        else
+        {
+            await botClient.SendTextMessageAsync(update.Message.Chat.Id, "Неизвестная команда, повторите попытку:");
         }
     }
 }
