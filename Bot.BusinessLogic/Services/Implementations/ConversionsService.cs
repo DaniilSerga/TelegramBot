@@ -45,7 +45,7 @@ namespace Bot.BusinessLogic.Services.Implementations
                 engine.Convert(inputFile, outputFile);
             }
 
-            CreateDbNote(new Conversion { UserId = userId, YtLink = url });
+            CreateDbNote(new Conversion { UserId = userId, YtLink = url, Username = userName });
 
             return $"{outputFile.Filename}";
         }

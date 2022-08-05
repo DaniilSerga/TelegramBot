@@ -12,6 +12,8 @@ namespace Bot.Model.DatabaseModels
 
         public long UserId { get; set; }
 
+        public string Username { get; set; } = "";
+
         public string YtLink { get; set; } = string.Empty;
 
         public DateTime ConversionDate { get; set; } = DateTime.Now;
