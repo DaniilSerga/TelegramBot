@@ -16,9 +16,14 @@ namespace Bot.BusinessLogic.Services.Implementations
 
         public ConversionsService() { }
 
-        //TODO Compete deleting files from local repository after sending the message in telegram
+        //TODO Complete uri check if video exists
         public string Convert(string url, long userId, string userName)
         {
+            if (string.IsNullOrEmpty(url))
+            {
+                throw new ArgumentNullException(nameof(url), "Неверная ссылка");
+            }
+
             DeleteMusicFromLocalRep();
 
             DirectoryInfo dirInfo = new DirectoryInfo(_pathToFolder);
@@ -30,12 +35,19 @@ namespace Bot.BusinessLogic.Services.Implementations
             
             var youtube = YouTube.Default;
             var vid = youtube.GetVideo(url);
-            string videopath = Path.Combine(_pathToFolder, vid.FullName);
 
-            File.WriteAllBytes(videopath, vid.GetBytes());
+            if (vid is null)
+            {
+                throw new ArgumentException("Video was null");
+            }
 
-            var inputFile = new MediaFile { Filename = Path.Combine(_pathToFolder, vid.FullName) };
-            var outputFile = new MediaFile { Filename = Path.Combine(_pathToFolder, $"{vid.Title}.mp3") };
+            string videoName = NormalizeString(vid.FullName);
+            string videoTitle = videoName.Substring(0, videoName.LastIndexOf(".mp4"));
+
+            File.WriteAllBytes(Path.Combine(_pathToFolder, videoName), vid.GetBytes());
+
+            var inputFile = new MediaFile { Filename = Path.Combine(_pathToFolder, videoName) };
+            var outputFile = new MediaFile { Filename = Path.Combine(_pathToFolder, $"{videoTitle}.mp3") };
 
             using (var engine = new Engine())
             {
@@ -45,11 +57,15 @@ namespace Bot.BusinessLogic.Services.Implementations
                 engine.Convert(inputFile, outputFile);
             }
 
-            CreateDbNote(new Conversion { UserId = userId, YtLink = url, Username = userName });
+            if (File.Exists(outputFile.Filename))
+            {
+                CreateDbNote(new Conversion { UserId = userId, YtLink = url, Username = userName });
+            }
 
             return $"{outputFile.Filename}";
         }
 
+        // Deletes music from local repository
         public static void DeleteMusicFromLocalRep()
         {
             DirectoryInfo dirInfo = new DirectoryInfo(_pathToFolder);
@@ -60,6 +76,7 @@ namespace Bot.BusinessLogic.Services.Implementations
             }
         }
         
+        // Creates note in database
         private static void CreateDbNote(Conversion conversion)
         {
             if (conversion is null)
@@ -70,6 +87,28 @@ namespace Bot.BusinessLogic.Services.Implementations
             using ApplicationContext db = new();
             db.Conversions.Add(conversion);
             db.SaveChanges();
+
+            Console.WriteLine("Note was saved successfully");
+            Console.WriteLine($"{conversion.Id}. {conversion.UserId} - {conversion.Username}: {conversion.YtLink} Date: {conversion.ConversionDate}");
+        }
+
+        private static string NormalizeString(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                throw new ArgumentNullException(nameof(text), "Text variable is null or empty.");
+            }
+
+            // Removes every char containing punctuation, except for extension
+            for (int i = 0; i < text.Length - 4; i++)
+            {
+                if (char.IsPunctuation(text[i]))
+                {
+                    text = text.Replace(text[i], ' ');
+                }
+            }
+
+            return text;
         }
     }
 }
