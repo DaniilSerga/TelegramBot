@@ -1,14 +1,10 @@
 ﻿using Bot.BusinessLogic.Services.Implementations;
-using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Exceptions;
-using System.IO;
-using VideoLibrary;
 
 ITelegramBotClient bot = new TelegramBotClient("5499122271:AAGRTlxr4IV_3WJI82Kci97MpIQ3GjM2los");
 
@@ -30,9 +26,8 @@ Console.ReadLine();
 
 static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
-    // Некоторые действия
-    Console.ResetColor();
     Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(update));
+
     if (update.Type == Telegram.Bot.Types.Enums.UpdateType.Message)
     {
         var message = update.Message;
@@ -52,11 +47,11 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
             await botClient.SendTextMessageAsync(message.Chat, "Начнём. Отправьте ссылку на youtube видео, которое вы хотите конвертировать в аудио:");
             Console.WriteLine("/start");
         }
-        else if (message.Text.StartsWith("https://www.youtube.com/") || message.Text.StartsWith("https://youtu.be/") && update.Message is not null)
+        else if ((message.Text.StartsWith("https://www.youtube.com/") || message.Text.StartsWith("https://youtu.be/")) && update.Message is not null)
         {
             await botClient.SendTextMessageAsync(update.Message.Chat.Id, "Песня загружается\nЭто может занять некоторое время...");
 
-            string songPath = new ConversionsService().Convert(message.Text, update.Message.Chat.Id, update.Message.Chat.FirstName + " " + update.Message.Chat.LastName);
+            string songPath = await new ConversionsService().Convert(message.Text, update.Message.Chat.Id, update.Message.Chat.FirstName + " " + update.Message.Chat.LastName);
 
             if (string.IsNullOrEmpty(songPath))
             {
@@ -65,13 +60,22 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
 
             await botClient.SendTextMessageAsync(update.Message.Chat.Id, "Ваш трек:");
 
-            using (var stream = System.IO.File.OpenRead(songPath))
+            try
             {
-                _ = await botClient.SendAudioAsync(update.Message.Chat.Id,
-                new Telegram.Bot.Types.InputFiles.InputOnlineFile(stream, songPath.Substring(songPath.LastIndexOf('\\'), songPath.Length - songPath.LastIndexOf('\\'))),
-                cancellationToken: cancellationToken);
+                using (var stream = System.IO.File.OpenRead(songPath))
+                {
+                    await botClient.SendAudioAsync(update.Message.Chat.Id,
+                    new Telegram.Bot.Types.InputFiles.InputOnlineFile(stream, songPath.Substring(songPath.LastIndexOf('\\'), songPath.Length - songPath.LastIndexOf('\\'))),
+                    cancellationToken: cancellationToken);
 
-                await botClient.SendTextMessageAsync(update.Message.Chat.Id, "Отправьте следующую ссылку:");
+                    await botClient.SendTextMessageAsync(update.Message.Chat.Id, "Отправьте следующую ссылку:");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(ex.Message);
+                Console.ResetColor();
             }
 
             Console.WriteLine("-------------------\nSENDED SUCCESFULLY|\n-------------------");

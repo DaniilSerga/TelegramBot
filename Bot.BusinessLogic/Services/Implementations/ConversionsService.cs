@@ -1,12 +1,9 @@
 ﻿using Bot.BusinessLogic.Services.Contracts;
-using Bot.Common.Models;
 using Bot.Model;
 using Bot.Model.DatabaseModels;
-using System;
 using VideoLibrary;
 using MediaToolkit;
 using MediaToolkit.Model;
-using System.Runtime.Serialization;
 
 namespace Bot.BusinessLogic.Services.Implementations
 {
@@ -16,17 +13,42 @@ namespace Bot.BusinessLogic.Services.Implementations
 
         public ConversionsService() { }
 
-        //TODO Complete uri check if video exists
-        public string Convert(string url, long userId, string userName)
+        public async Task<string> Convert(string url, long userId, string userName)
         {
-            if (string.IsNullOrEmpty(url))
+            string path = string.Empty;
+
+            try
             {
-                throw new ArgumentNullException(nameof(url), "Неверная ссылка");
+                path = await GetAudioFile(url, userId, userName);
             }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(ex.Message);
+                Console.ResetColor();
+            }
+
+            return path;
+        }
+
+        // Converting video into /mp3 file
+        private static async Task<string> GetAudioFile(string url, long userId, string userName)
+        {
+            if (url is null)
+            {
+                throw new ArgumentNullException(nameof(url), "Url was null.");
+            }
+
+            if (userName is null)
+            {
+                throw new ArgumentNullException(nameof(userName), "userName was null.");
+            }
+
+            await Task.Delay(0);
 
             DeleteMusicFromLocalRep();
 
-            DirectoryInfo dirInfo = new DirectoryInfo(_pathToFolder);
+            DirectoryInfo dirInfo = new (_pathToFolder);
 
             if (!dirInfo.Exists)
             {
@@ -34,28 +56,38 @@ namespace Bot.BusinessLogic.Services.Implementations
             }
 
             Console.ForegroundColor = ConsoleColor.Green;
+
+            #region Getting Youtube video
             Console.Write("\nGetting video from youtube...");
             var youtube = YouTube.Default;
             var vid = youtube.GetVideo(url);
             Console.WriteLine("Success");
+            #endregion
 
             if (vid is null)
             {
-                throw new ArgumentException("Video was null");
+                throw new ArgumentException("No video was found.", nameof(url));
             }
 
+            #region Normalizing video name
             Console.Write("Normalizing video's name...");
-            string videoName = NormalizeString(vid.FullName);
-            string videoTitle = videoName.Substring(0, videoName.LastIndexOf(".mp4"));
-            Console.WriteLine("Success");
 
+            string videoName = NormalizeString(vid.FullName);
+            string videoTitle = videoName[..videoName.LastIndexOf(".mp4")];
+
+            Console.WriteLine("Success");
+            #endregion
+
+            #region Saving video to a local folder
             File.WriteAllBytes(Path.Combine(_pathToFolder, videoName), vid.GetBytes());
 
             Console.Write("Saving video...");
             var inputFile = new MediaFile { Filename = Path.Combine(_pathToFolder, videoName) };
             var outputFile = new MediaFile { Filename = Path.Combine(_pathToFolder, $"{videoTitle}.mp3") };
             Console.WriteLine("Success");
+            #endregion
 
+            #region Converting region
             Console.Write("Converting video to .mp3 file...");
             using (var engine = new Engine())
             {
@@ -64,7 +96,9 @@ namespace Bot.BusinessLogic.Services.Implementations
                 engine.Convert(inputFile, outputFile);
             }
             Console.WriteLine("Success");
+            #endregion
 
+            // Checks if audio exists
             if (File.Exists(outputFile.Filename))
             {
                 Console.WriteLine("Adding data to database...");
@@ -73,13 +107,14 @@ namespace Bot.BusinessLogic.Services.Implementations
 
             Console.ResetColor();
 
-            return $"{outputFile.Filename}";
+            // returns path to the audio
+            return outputFile.Filename;
         }
 
         // Deletes music from local repository
-        public static void DeleteMusicFromLocalRep()
+        private static void DeleteMusicFromLocalRep()
         {
-            DirectoryInfo dirInfo = new DirectoryInfo(_pathToFolder);
+            DirectoryInfo dirInfo = new (_pathToFolder);
 
             foreach (FileInfo file in dirInfo.GetFiles())
             {
@@ -103,6 +138,7 @@ namespace Bot.BusinessLogic.Services.Implementations
             Console.WriteLine($"{conversion.Id}. {conversion.UserId} - {conversion.Username}: {conversion.YtLink} Date: {conversion.ConversionDate}");
         }
 
+        // Deletes all punctuation chars from file name
         private static string NormalizeString(string text)
         {
             if (string.IsNullOrEmpty(text))

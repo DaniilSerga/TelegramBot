@@ -4,6 +4,6 @@ namespace Bot.BusinessLogic.Services.Contracts
 {
     internal interface IConversionsService
     {
-        string Convert(string url, long userId, string userName);
+        Task<string> Convert(string url, long userId, string userName);
     }
 }
