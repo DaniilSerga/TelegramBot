@@ -8,6 +8,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Exceptions;
 using System.IO;
+using VideoLibrary;
 
 ITelegramBotClient bot = new TelegramBotClient("5499122271:AAGRTlxr4IV_3WJI82Kci97MpIQ3GjM2los");
 
@@ -30,6 +31,7 @@ Console.ReadLine();
 static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
     // Некоторые действия
+    Console.ResetColor();
     Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(update));
     if (update.Type == Telegram.Bot.Types.Enums.UpdateType.Message)
     {
@@ -47,11 +49,12 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
 
         if (message.Text.ToLower() == "/start")
         {
-            await botClient.SendTextMessageAsync(message.Chat, "Начнём. Ожидаю ссылку на youtube видео:");
+            await botClient.SendTextMessageAsync(message.Chat, "Начнём. Отправьте ссылку на youtube видео, которое вы хотите конвертировать в аудио:");
+            Console.WriteLine("/start");
         }
-        else if (message.Text.StartsWith("https://www.youtube.com/") || message.Text.StartsWith("https://youtu.be/"))
+        else if (message.Text.StartsWith("https://www.youtube.com/") || message.Text.StartsWith("https://youtu.be/") && update.Message is not null)
         {
-            botClient.SendTextMessageAsync(update.Message.Chat.Id, "Песня загружается\nЭто может занять некоторое время...");
+            await botClient.SendTextMessageAsync(update.Message.Chat.Id, "Песня загружается\nЭто может занять некоторое время...");
 
             string songPath = new ConversionsService().Convert(message.Text, update.Message.Chat.Id, update.Message.Chat.FirstName + " " + update.Message.Chat.LastName);
 
@@ -60,16 +63,23 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
                 throw new Exception("Bad link");
             }
 
-            await using var stream = System.IO.File.OpenRead(songPath);
-            _ = botClient.SendAudioAsync(update.Message.Chat.Id,
+            await botClient.SendTextMessageAsync(update.Message.Chat.Id, "Ваш трек:");
+
+            using (var stream = System.IO.File.OpenRead(songPath))
+            {
+                _ = await botClient.SendAudioAsync(update.Message.Chat.Id,
                 new Telegram.Bot.Types.InputFiles.InputOnlineFile(stream, songPath.Substring(songPath.LastIndexOf('\\'), songPath.Length - songPath.LastIndexOf('\\'))),
                 cancellationToken: cancellationToken);
 
-            Console.WriteLine("-------------------------------\nSENDED SUCCESFULLY\n-------------------------------");
+                await botClient.SendTextMessageAsync(update.Message.Chat.Id, "Отправьте следующую ссылку:");
+            }
+
+            Console.WriteLine("-------------------\nSENDED SUCCESFULLY|\n-------------------");
         }
         else
         {
             await botClient.SendTextMessageAsync(update.Message.Chat.Id, "Неизвестная команда, повторите попытку:");
+            Console.WriteLine("Неизвестная команда от пользователя");
         }
     }
 }

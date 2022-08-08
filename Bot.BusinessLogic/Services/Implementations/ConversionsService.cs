@@ -32,35 +32,46 @@ namespace Bot.BusinessLogic.Services.Implementations
             {
                 dirInfo.Create();
             }
-            
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write("\nGetting video from youtube...");
             var youtube = YouTube.Default;
             var vid = youtube.GetVideo(url);
+            Console.WriteLine("Success");
 
             if (vid is null)
             {
                 throw new ArgumentException("Video was null");
             }
 
+            Console.Write("Normalizing video's name...");
             string videoName = NormalizeString(vid.FullName);
             string videoTitle = videoName.Substring(0, videoName.LastIndexOf(".mp4"));
+            Console.WriteLine("Success");
 
             File.WriteAllBytes(Path.Combine(_pathToFolder, videoName), vid.GetBytes());
 
+            Console.Write("Saving video...");
             var inputFile = new MediaFile { Filename = Path.Combine(_pathToFolder, videoName) };
             var outputFile = new MediaFile { Filename = Path.Combine(_pathToFolder, $"{videoTitle}.mp3") };
+            Console.WriteLine("Success");
 
+            Console.Write("Converting video to .mp3 file...");
             using (var engine = new Engine())
             {
                 engine.GetMetadata(inputFile);
 
-
                 engine.Convert(inputFile, outputFile);
             }
+            Console.WriteLine("Success");
 
             if (File.Exists(outputFile.Filename))
             {
+                Console.WriteLine("Adding data to database...");
                 CreateDbNote(new Conversion { UserId = userId, YtLink = url, Username = userName });
             }
+
+            Console.ResetColor();
 
             return $"{outputFile.Filename}";
         }
@@ -88,7 +99,7 @@ namespace Bot.BusinessLogic.Services.Implementations
             db.Conversions.Add(conversion);
             db.SaveChanges();
 
-            Console.WriteLine("Note was saved successfully");
+            Console.WriteLine("\nNote was saved successfully");
             Console.WriteLine($"{conversion.Id}. {conversion.UserId} - {conversion.Username}: {conversion.YtLink} Date: {conversion.ConversionDate}");
         }
 
@@ -99,16 +110,18 @@ namespace Bot.BusinessLogic.Services.Implementations
                 throw new ArgumentNullException(nameof(text), "Text variable is null or empty.");
             }
 
+            char[] charArray = text.ToCharArray();
+
             // Removes every char containing punctuation, except for extension
-            for (int i = 0; i < text.Length - 4; i++)
+            for (int i = 0; i < charArray.Length - 4; i++)
             {
-                if (char.IsPunctuation(text[i]))
+                if (char.IsPunctuation(charArray[i]))
                 {
-                    text = text.Replace(text[i], ' ');
+                    charArray[i] = '_';
                 }
             }
 
-            return text;
+            return new string(charArray);
         }
     }
 }
