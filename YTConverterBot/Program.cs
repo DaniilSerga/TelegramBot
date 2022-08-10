@@ -47,7 +47,9 @@ static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
             await botClient.SendTextMessageAsync(message.Chat, "Начнём. Отправьте ссылку на youtube видео, которое вы хотите конвертировать в аудио:");
             Console.WriteLine("/start");
         }
-        else if ((message.Text.StartsWith("https://www.youtube.com/") || message.Text.StartsWith("https://youtu.be/")) && update.Message is not null)
+        else if ((message.Text.StartsWith("https://www.youtube.com/") || 
+                  message.Text.StartsWith("https://youtu.be/")) && 
+                  update.Message is not null)
         {
             await botClient.SendTextMessageAsync(update.Message.Chat.Id, "Песня загружается\nЭто может занять некоторое время...");
 

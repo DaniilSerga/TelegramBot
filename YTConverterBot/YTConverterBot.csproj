@@ -19,7 +19,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Bot.BusinessLogic\Bot.BusinessLogic.csproj" />
-    <ProjectReference Include="..\Bot.Common\Bot.Common.csproj" />
   </ItemGroup>
 
 </Project>
